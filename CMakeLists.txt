@@ -22,19 +22,22 @@ set(LIBSOURCES jaricom.c jcapimin.c jcapistd.c jcarith.c jccoefct.c jccolor.c
 # Headers which are installed to support the library
 set(INSTINCLUDES jerror.h jmorecfg.h jpeglib.h)
 
-add_library(libjpeg ${LIBSOURCES})
-target_include_directories(libjpeg
+# target name is 'JPEG' because at the end we want to export the target
+# JPEG::JPEG following the convention in the CMake find-modules
+add_library(JPEG ${LIBSOURCES})
+target_include_directories(JPEG
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 		$<INSTALL_INTERFACE:include>
 		)
-set_target_properties(libjpeg PROPERTIES
+set_target_properties(JPEG PROPERTIES
 	VERSION ${JPEG_LIB_VERSION_MAJOR}.${JPEG_LIB_VERSION_MINOR}
 	SOVERSION ${JPEG_LIB_VERSION}
 	DEBUG_POSTFIX d)
 if(UNIX)
-	set_target_properties(libjpeg PROPERTIES
-		OUTPUT_NAME jpeg)
+	set_target_properties(JPEG PROPERTIES OUTPUT_NAME jpeg)
+else()
+	set_target_properties(JPEG PROPERTIES OUTPUT_NAME libjpeg)
 endif()
 
 # Executables to build
@@ -53,22 +56,25 @@ foreach(i ${bin_PROGRAMS})
 	add_executable(${i} ${${i}_SOURCES})
 endforeach()
 
-target_link_libraries(cjpeg libjpeg)
-target_link_libraries(djpeg libjpeg)
-target_link_libraries(jpegtran libjpeg)
+target_link_libraries(cjpeg JPEG)
+target_link_libraries(djpeg JPEG)
+target_link_libraries(jpegtran JPEG)
 target_include_directories(rdjpgcom PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_include_directories(wrjpgcom PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/include)
 
 install(FILES ${INSTINCLUDES} ${CMAKE_CURRENT_BINARY_DIR}/include/jconfig.h
 	DESTINATION include)
 
-install(TARGETS libjpeg EXPORT jpeg-targets
+install(TARGETS JPEG EXPORT jpeg-targets
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
 	RUNTIME DESTINATION bin
 	)
-install(EXPORT jpeg-targets DESTINATION lib/cmake/jpeg
-	FILE jpeg-config.cmake)
+install(EXPORT jpeg-targets
+	DESTINATION lib/cmake/jpeg
+	NAMESPACE JPEG::
+	FILE jpeg-config.cmake
+	)
 
 enable_testing()
 
